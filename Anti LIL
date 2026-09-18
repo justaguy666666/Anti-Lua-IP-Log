@@ -1,0 +1,157 @@
+local ANTI_IP_LOG = true
+local REQUESTS_LOG = true
+
+local suspiciousPatterns = {
+    "api.ipify.org",
+    "ipify.org",
+    "ipinfo.io",
+    "icanhazip.com",
+    "ifconfig.me",
+    "ifconfig.co",
+    "checkip.amazonaws.com",
+    "ident.me",
+    "myexternalip.com",
+    "ip-api.com",
+    "discord.com/api/webhooks",
+    "discordapp.com/api/webhooks",
+    "hooks.slack.com",
+    "webhook.site",
+    "requestbin.com",
+    "pipedream.net"
+}
+
+local installed = {}
+local original = {}
+
+local function normalize(value)
+    return tostring(value or ""):lower()
+end
+
+local function isSuspicious(url)
+    local lower = normalize(url)
+
+    for _, pattern in ipairs(suspiciousPatterns) do
+        if string.find(lower, pattern, 1, true) then
+            return true, pattern
+        end
+    end
+
+    return false, nil
+end
+
+local function inspectRequest(options, source)
+    local url
+    local method = "GET"
+
+    if typeof(options) == "string" then
+        url = options
+    elseif typeof(options) == "table" then
+        url = options.Url or options.URL or options.url
+        method = options.Method or options.method or "GET"
+    end
+
+    url = tostring(url or "UNKNOWN")
+    method = tostring(method)
+
+    local suspicious, matched = isSuspicious(url)
+
+    if suspicious then
+        warn("[Anti IP Log] BLOCKED")
+        warn("  Source: " .. source)
+        warn("  Method: " .. method)
+        warn("  URL: " .. url)
+        warn("  Match: " .. tostring(matched))
+
+        return true
+    end
+
+    if REQUESTS_LOG then
+        print("[Anti IP Log] ALLOWED")
+        print("  Source: " .. source)
+        print("  Method: " .. method)
+        print("  URL: " .. url)
+    end
+
+    return false
+end
+
+local function hookRequest(name, source)
+    local fn = getgenv()[name]
+
+    if typeof(fn) ~= "function" then
+        return
+    end
+
+    if installed[name] then
+        return
+    end
+
+    original[name] = fn
+    installed[name] = true
+
+    getgenv()[name] = function(options)
+        if inspectRequest(options, source) then
+            return {
+                Success = false,
+                StatusCode = 403,
+                StatusMessage = "Blocked by Anti IP Log",
+                Body = ""
+            }
+        end
+
+        return original[name](options)
+    end
+
+    print("[Anti IP Log] Hooked " .. source)
+end
+
+local function hookTableRequest(tableName, source)
+    local tbl = getgenv()[tableName]
+
+    if typeof(tbl) ~= "table" then
+        return
+    end
+
+    local fn = tbl.request
+
+    if typeof(fn) ~= "function" then
+        return
+    end
+
+    if installed[tableName .. ".request"] then
+        return
+    end
+
+    original[tableName .. ".request"] = fn
+    installed[tableName .. ".request"] = true
+
+    tbl.request = function(options)
+        if inspectRequest(options, source) then
+            return {
+                Success = false,
+                StatusCode = 403,
+                StatusMessage = "Blocked by Anti IP Log",
+                Body = ""
+            }
+        end
+
+        return original[tableName .. ".request"](options)
+    end
+
+    print("[Anti IP Log] Hooked " .. source)
+end
+
+print("════════════════════════════════════════")
+print("        Anti IP Log By EasyAssNames")
+print("════════════════════════════════════════")
+
+hookRequest("request", "request")
+hookRequest("http_request", "http_request")
+
+hookTableRequest("syn", "syn.request")
+hookTableRequest("fluxus", "fluxus.request")
+hookTableRequest("http", "http.request")
+
+print("════════════════════════════════════════")
+print("       For extra safety turn on VPN")
+print("════════════════════════════════════════")
