@@ -24,6 +24,18 @@ local suspiciousPatterns = {
     "ipapi.co",
     "ipapi.com",
     "ipwhois.app",
+    "ipgetter.com",
+    "ipcontext.info",
+    "ipaddress.to",
+    "ifconfig.is",
+    "getpublicip.com",
+    "ippubblico.org",
+    "whatismyipaddress.monster",
+    "iplocation.net",
+    "ipstack.com",
+    "ipdata.co",
+    "ipgeolocation.io",
+    "ip-api.io",
     "pipedream.net"
 }
 
