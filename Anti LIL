@@ -17,6 +17,13 @@ local suspiciousPatterns = {
     "hooks.slack.com",
     "webhook.site",
     "requestbin.com",
+    "ipapi.is",
+    "freeipapi.com",
+    "ipconfig.io",
+    "ipwho.is",
+    "ipapi.co",
+    "ipapi.com",
+    "ipwhois.app",
     "pipedream.net"
 }
 
