@@ -73,7 +73,6 @@ local suspiciousPatterns = {
     "ip.guide",
     "ipleak.net",
     "cloudflare.com/cdn-cgi/trace",
-
     "discord.com/api/webhooks",
     "discordapp.com/api/webhooks",
     "hooks.slack.com",
